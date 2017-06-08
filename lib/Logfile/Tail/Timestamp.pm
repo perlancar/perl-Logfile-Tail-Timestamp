@@ -27,7 +27,7 @@ sub new {
 sub _switch_cur {
     my ($self, $glob, $filename, $seek_end) = @_;
 
-    say "D:opening $filename";
+    #say "D:opening $filename";
     my $fh = IO::File->new($filename, "r") or die "$filename: $!";
     $fh->blocking(0);
     $fh->seek(0, 2) if $seek_end;
@@ -61,6 +61,7 @@ sub getline {
         }
     }
 
+  GLOB:
     for my $glob (keys %{ $self->{_cur_fh} }) {
       READ:
         my $fh = $self->{_cur_fh}{$glob};
@@ -68,25 +69,25 @@ sub getline {
         if (defined $line) {
             return $line;
         } else {
-            say "D:got undef";
+            #say "D:got undef";
             $self->{_cur_eof}{$glob} = 1 if $fh->eof;
             if ($self->{_cur_eof}{$glob}) {
-                say "D:is eof";
+                #say "D:is eof";
                 # we are at the end of the file ...
                 my @pending = sort keys %{ $self->{_pending}{$glob} };
                 if (@pending) {
-                    say "D:has pending file";
+                    #say "D:has pending file";
                     # if there is another file pending, switch to that file
                     $self->_switch_cur($glob, $pending[0]);
                     delete $self->{_pending}{$glob}{$pending[0]};
                     goto READ;
                 } else {
-                    say "D:no pending file";
+                    #say "D:no pending file";
                     # there is no other file, keep at the current file
-                    next;
+                    next GLOB;
                 }
             } else {
-                say "D:not eof";
+                #say "D:not eof";
             }
         }
     }

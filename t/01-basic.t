@@ -10,28 +10,37 @@ use Logfile::Tail::Timestamp;
 use Time::HiRes 'sleep';
 
 my $tempdir = tempdir();
+diag "tempdir: $tempdir";
+
+sub _append {
+    my ($filename, $str) = @_;
+    open my $fh, ">>", $filename or die;
+    #$fh->autoflush(1);
+    print $fh $str;
+    close $fh;
+}
 
 subtest "single glob" => sub {
     my $dir = "$tempdir/1";
     mkdir $dir, 0755 or die;
-
-    open my $fha, ">>", "log-a"; $fha->autoflush(1); print $fha "one-a\n";
-    open my $fhb, ">>", "log-b"; $fhb->autoflush(2); print $fhb "one-b\ntwo-b\n";
+    chdir $dir or die;
+    _append("log-a", "one-a\n");
+    _append("log-b", "one-b\n");
     my $tail = Logfile::Tail::Timestamp->new(
-        globs => ["$dir/log-*"],
+        globs => ["log-*"],
     );
     is_deeply($tail->getline, undef, "initial");
-    print $fha "two-a\n"; sleep 1;
+    _append("log-a", "two-a\n");
     is_deeply($tail->getline, undef, "line added to log-a has no effect");
-    print $fhb "three-b\nfour-b\n";
-    $tail->getline;
-    is_deeply($tail->getline, "three-b\n", "line added to log-b is seen (1)");
-    is_deeply($tail->getline, "four-b\n", "line added to log-b is seen (2)");
+    _append("log-b", "two-b\nthree-b\n");
+    is_deeply($tail->getline, "two-b\n", "line added to log-b is seen (1)");
+    is_deeply($tail->getline, "three-b\n", "line added to log-b is seen (2)");
 };
 
 subtest "two globs" => sub {
     my $dir = "$tempdir/2";
     mkdir $dir, 0755 or die;
+    chdir $dir or die;
 
     ok 1;
 };
